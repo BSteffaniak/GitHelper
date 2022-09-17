@@ -1,0 +1,11 @@
+package githelper
+
+import githelper/GitHelper
+
+testable class {
+  test `can create`() {
+    let value = GitHelper()
+
+    expect(value).toNotBe(null)
+  }
+}

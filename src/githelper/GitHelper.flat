@@ -1,0 +1,53 @@
+package githelper
+
+import flat/log/Logger
+import flatlang/io/File
+import flatlang/git/Git
+import flatlang/git/Git.PullResponse
+
+class {
+  let static Logger log = Logger(GitHelper.class)
+
+  public static async pullAll(
+    File[] repoDirectories,
+    Bool: sync = false
+  ) {
+    let gits = repoDirectories.map({ Git(_) })
+
+    let responses = if (sync) {
+      gits.mapAsync(async (git) => {
+        log.info("Pulling repo #{git.workingDirectory.nativeLocation}")
+        return GitResponse(git.workingDirectory, git.pull(silent: true))
+      })
+    } else {
+      gits.mapParallel(async (git) => {
+        log.info("Pulling repo #{git.workingDirectory.nativeLocation}")
+        return GitResponse(git.workingDirectory, git.pull(silent: true))
+      })
+    }
+
+    responses
+      .filter({ _.response.success })
+      .forEach((value) => {
+        log.info("Repo \"#{value.repoDirectory.nativeLocation}\" #{value.response.upToDate ? "already up to date" : "updated"}.")
+      })
+
+    responses
+      .filter({ !_.response.success })
+      .forEach((value) => {
+        log.error("|
+          Error pulling repo \"#{value.repoDirectory.nativeLocation}\":
+          \t#{value.response.toString().indent(1)}
+          |")
+      })
+
+    log.info("Finished")
+  }
+
+  class GitResponse {
+    public construct(
+      visible File repoDirectory,
+      visible PullResponse response
+    ) {}
+  }
+}

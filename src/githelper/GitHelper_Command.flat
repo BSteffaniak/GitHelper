@@ -1,0 +1,55 @@
+package githelper
+
+import flat/log/Logger
+import flatlang/io/File
+import flatlang/fucli/FuCli
+import flatlang/fucli/CliArg
+import flat/github/GitHub
+
+class {
+  let static Logger log = Logger(GitHelper.class)
+
+  let static CliArg pullCommand = CliArg("pull", count: 1)
+  let static CliArg directoryArg = CliArg("--directory", ["-d"], count: 1)
+  let static CliArg syncArg = CliArg("--sync")
+
+  public static async main(String[] args) {
+    let cli = FuCli([
+      pullCommand,
+      directoryArg,
+      syncArg
+    ]):parse(args.skip(1))
+
+    let repos = GitHub.getOrganizationRepos(pullCommand.value)
+
+    // external {
+    //   console.log(#{repos.data}[0]);
+    // }
+
+    // log.info(repos)
+
+    // let repoDirectories = Array<File>():addAll([
+    //   File(System.homeDirectory + "/GitHub/FlatWorkspace/Server"),
+    //   File(System.homeDirectory + "/GitHub/FlatWorkspace/Logger")
+    // ])
+
+    let directory = directoryArg.enabled ?
+      File(directoryArg.value) :
+      File(System.workingDirectory)
+
+    let repoDirectories = repos
+      .map({ _.name })
+      .map({ File(directory, _) })
+      .filter({ _.exists })
+
+    let commands = cli.args.filter({ _.enabled })
+
+    for (command in commands) {
+      log.debug("Running command \"#command\"")
+
+      match (command) {
+        pullCommand => GitHelper.pullAll(repoDirectories, sync: syncArg.enabled)
+      }
+    }
+  }
+}
