@@ -59,7 +59,7 @@ class {
   static async exec(File directory) {
     GitHelper.execAll(
       execCommand.values.skip(1),
-      getRepoDirectories(execCommand.values.first, directory),
+      getRepoDirectories(execCommand.values.first, directory).filter({ _.exists }),
       sync: syncArg.enabled
     )
   }
