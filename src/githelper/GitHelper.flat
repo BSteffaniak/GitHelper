@@ -86,6 +86,43 @@ class {
     log.info("Finished")
   }
 
+  public static async execAll(
+    String[] commands,
+    File[] repoDirectories,
+    Bool: sync = false
+  ) {
+    var GitResponse<ExecutionResponse>[] responses
+
+    if (sync) {
+      responses = repoDirectories.mapAsync(async (directory) => {
+        log.info("Executing command \"#{commands}\" in directory #{directory.getCanonicalPath()}")
+        return GitResponse(directory, System.execute(commands, workingDirectory: directory.getCanonicalPath(), silent: true))
+      })
+    } else {
+      responses = repoDirectories.mapParallel(async (directory) => {
+        log.info("Executing command \"#{commands}\" in directory #{directory.getCanonicalPath()}")
+        return GitResponse(directory, System.execute(commands, workingDirectory: directory.getCanonicalPath(), silent: true))
+      })
+    }
+
+    responses
+      .filter({ _.response.exitCode == 0 })
+      .forEach((value) => {
+        log.info("Executed command in repo \"#{value.repoDirectory.nativeLocation}\" executed.")
+      })
+
+    responses
+      .filter({ _.response.exitCode != 0 })
+      .forEach((value) => {
+        log.error("|
+          Error executing command in repo \"#{value.repoDirectory.nativeLocation}\":
+          \t#{value.response.toString().indent(1)}
+          |")
+      })
+
+    log.info("Finished")
+  }
+
   class GitResponse<TResponse> {
     public construct(
       visible File repoDirectory,

@@ -11,6 +11,7 @@ class {
 
   let static CliArg pullCommand = CliArg("pull", count: 1)
   let static CliArg cloneCommand = CliArg("clone", count: 1)
+  let static CliArg execCommand = CliArg("exec", minCount: 2)
   let static CliArg directoryArg = CliArg("--directory", ["-d"], count: 1)
   let static CliArg syncArg = CliArg("--sync")
 
@@ -18,6 +19,7 @@ class {
     let cli = FuCli([
       pullCommand,
       cloneCommand,
+      execCommand,
       directoryArg,
       syncArg
     ]):parse(args.skip(1))
@@ -34,6 +36,7 @@ class {
       match (command) {
         pullCommand => pull(directory)
         cloneCommand => clone(directory)
+        execCommand => exec(directory)
       }
     }
   }
@@ -49,6 +52,14 @@ class {
     GitHelper.cloneAll(
       cloneCommand.value,
       getRepoDirectories(cloneCommand.value, directory),
+      sync: syncArg.enabled
+    )
+  }
+
+  static async exec(File directory) {
+    GitHelper.execAll(
+      execCommand.values.skip(1),
+      getRepoDirectories(execCommand.values.first, directory),
       sync: syncArg.enabled
     )
   }
