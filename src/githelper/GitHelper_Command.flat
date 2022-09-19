@@ -22,17 +22,6 @@ class {
       syncArg
     ]):parse(args.skip(1))
 
-    // external {
-    //   console.log(#{repos.data}[0]);
-    // }
-
-    // log.info(repos)
-
-    // let repoDirectories = Array<File>():addAll([
-    //   File(System.homeDirectory + "/GitHub/FlatWorkspace/Server"),
-    //   File(System.homeDirectory + "/GitHub/FlatWorkspace/Logger")
-    // ])
-
     let directory = directoryArg.enabled ?
       File(directoryArg.value) :
       File(System.workingDirectory)
