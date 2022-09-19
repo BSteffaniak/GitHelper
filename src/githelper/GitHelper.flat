@@ -1,5 +1,6 @@
 package githelper
 
+import flatlang/system/ExecutionResponse
 import flat/log/Logger
 import flatlang/io/File
 import flatlang/git/Git
@@ -14,13 +15,15 @@ class {
   ) {
     let gits = repoDirectories.map({ Git(_) })
 
-    let responses = if (sync) {
-      gits.mapAsync(async (git) => {
+    var GitResponse<PullResponse>[] responses
+
+    if (sync) {
+      responses = gits.mapAsync(async (git) => {
         log.info("Pulling repo #{git.workingDirectory.nativeLocation}")
         return GitResponse(git.workingDirectory, git.pull(silent: true))
       })
     } else {
-      gits.mapParallel(async (git) => {
+      responses = gits.mapParallel(async (git) => {
         log.info("Pulling repo #{git.workingDirectory.nativeLocation}")
         return GitResponse(git.workingDirectory, git.pull(silent: true))
       })
@@ -44,10 +47,49 @@ class {
     log.info("Finished")
   }
 
-  class GitResponse {
+  public static async cloneAll(
+    String organization,
+    File[] repoDirectories,
+    Bool: sync = false
+  ) {
+    var GitResponse<ExecutionResponse>[] responses
+
+    if (sync) {
+      responses = repoDirectories.mapAsync(async (directory) => {
+        let repoUrl = "https://github.com/#{organization}/#{directory.name}"
+        log.info("Cloning repo #{repoUrl} into #{directory.getCanonicalPath()}")
+        return GitResponse(directory, Git.clone(repoUrl, outputDirectory: directory.getCanonicalPath(), silent: true))
+      })
+    } else {
+      responses = repoDirectories.mapParallel(async (directory) => {
+        let repoUrl = "https://github.com/#{organization}/#{directory.name}"
+        log.info("Cloning repo #{repoUrl} into #{directory.getCanonicalPath()}")
+        return GitResponse(directory, Git.clone(repoUrl, outputDirectory: directory.getCanonicalPath(), silent: true))
+      })
+    }
+
+    responses
+      .filter({ _.response.exitCode == 0 })
+      .forEach((value) => {
+        log.info("Repo \"#{value.repoDirectory.nativeLocation}\" cloned.")
+      })
+
+    responses
+      .filter({ _.response.exitCode != 0 })
+      .forEach((value) => {
+        log.error("|
+          Error cloning repo \"#{value.repoDirectory.nativeLocation}\":
+          \t#{value.response.toString().indent(1)}
+          |")
+      })
+
+    log.info("Finished")
+  }
+
+  class GitResponse<TResponse> {
     public construct(
       visible File repoDirectory,
-      visible PullResponse response
+      visible TResponse response
     ) {}
   }
 }

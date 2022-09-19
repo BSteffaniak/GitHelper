@@ -10,17 +10,17 @@ class {
   let static Logger log = Logger(GitHelper.class)
 
   let static CliArg pullCommand = CliArg("pull", count: 1)
+  let static CliArg cloneCommand = CliArg("clone", count: 1)
   let static CliArg directoryArg = CliArg("--directory", ["-d"], count: 1)
   let static CliArg syncArg = CliArg("--sync")
 
   public static async main(String[] args) {
     let cli = FuCli([
       pullCommand,
+      cloneCommand,
       directoryArg,
       syncArg
     ]):parse(args.skip(1))
-
-    let repos = GitHub.getOrganizationRepos(pullCommand.value)
 
     // external {
     //   console.log(#{repos.data}[0]);
@@ -37,19 +37,35 @@ class {
       File(directoryArg.value) :
       File(System.workingDirectory)
 
-    let repoDirectories = repos
-      .map({ _.name })
-      .map({ File(directory, _) })
-      .filter({ _.exists })
-
     let commands = cli.args.filter({ _.enabled })
 
     for (command in commands) {
       log.debug("Running command \"#command\"")
 
       match (command) {
-        pullCommand => GitHelper.pullAll(repoDirectories, sync: syncArg.enabled)
+        pullCommand => pull(directory)
+        cloneCommand => clone(directory)
       }
     }
   }
+
+  static async pull(File directory) {
+    GitHelper.pullAll(
+      getRepoDirectories(pullCommand.value, directory).filter({ _.exists }),
+      sync: syncArg.enabled
+    )
+  }
+
+  static async clone(File directory) {
+    GitHelper.cloneAll(
+      cloneCommand.value,
+      getRepoDirectories(cloneCommand.value, directory),
+      sync: syncArg.enabled
+    )
+  }
+
+  static async getRepoDirectories(String organization, File directory) =>
+    GitHub.getOrganizationRepos(organization)
+      .map({ _.name })
+      .map({ File(directory, _) })
 }
