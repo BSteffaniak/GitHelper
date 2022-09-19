@@ -18,12 +18,12 @@ class {
     var GitResponse<PullResponse>[] responses
 
     if (sync) {
-      responses = gits.mapAsync(async (git) => {
+      responses = gits.mapAsync((git) => {
         log.info("Pulling repo #{git.workingDirectory.nativeLocation}")
         return GitResponse(git.workingDirectory, git.pull(silent: true))
       })
     } else {
-      responses = gits.mapParallel(async (git) => {
+      responses = gits.mapParallel((git) => {
         log.info("Pulling repo #{git.workingDirectory.nativeLocation}")
         return GitResponse(git.workingDirectory, git.pull(silent: true))
       })
@@ -55,13 +55,13 @@ class {
     var GitResponse<ExecutionResponse>[] responses
 
     if (sync) {
-      responses = repoDirectories.mapAsync(async (directory) => {
+      responses = repoDirectories.mapAsync((directory) => {
         let repoUrl = "https://github.com/#{organization}/#{directory.name}"
         log.info("Cloning repo #{repoUrl} into #{directory.getCanonicalPath()}")
         return GitResponse(directory, Git.clone(repoUrl, outputDirectory: directory.getCanonicalPath(), silent: true))
       })
     } else {
-      responses = repoDirectories.mapParallel(async (directory) => {
+      responses = repoDirectories.mapParallel((directory) => {
         let repoUrl = "https://github.com/#{organization}/#{directory.name}"
         log.info("Cloning repo #{repoUrl} into #{directory.getCanonicalPath()}")
         return GitResponse(directory, Git.clone(repoUrl, outputDirectory: directory.getCanonicalPath(), silent: true))
@@ -94,12 +94,12 @@ class {
     var GitResponse<ExecutionResponse>[] responses
 
     if (sync) {
-      responses = repoDirectories.mapAsync(async (directory) => {
+      responses = repoDirectories.mapAsync((directory) => {
         log.info("Executing command \"#{commands}\" in directory #{directory.getCanonicalPath()}")
         return GitResponse(directory, System.execute(commands, workingDirectory: directory.getCanonicalPath(), silent: true))
       })
     } else {
-      responses = repoDirectories.mapParallel(async (directory) => {
+      responses = repoDirectories.mapParallel((directory) => {
         log.info("Executing command \"#{commands}\" in directory #{directory.getCanonicalPath()}")
         return GitResponse(directory, System.execute(commands, workingDirectory: directory.getCanonicalPath(), silent: true))
       })
