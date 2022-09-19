@@ -1,10 +1,10 @@
 package githelper
 
-import flatlang/system/ExecutionResponse
+import flat/system/ExecutionResponse
 import flat/log/Logger
-import flatlang/io/File
-import flatlang/git/Git
-import flatlang/git/Git.PullResponse
+import flat/io/File
+import flat/git/Git
+import flat/git/Git.PullResponse
 
 class {
   let static Logger log = Logger(GitHelper.class)

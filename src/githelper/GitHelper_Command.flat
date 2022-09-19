@@ -1,9 +1,9 @@
 package githelper
 
 import flat/log/Logger
-import flatlang/io/File
-import flatlang/fucli/FuCli
-import flatlang/fucli/CliArg
+import flat/io/File
+import flat/fucli/FuCli
+import flat/fucli/CliArg
 import flat/github/GitHub
 
 class {
