@@ -15,7 +15,7 @@ class {
   ) {
     let gits = repoDirectories.map({ Git(_) })
 
-    var GitResponse<PullResponse>[] responses
+    var GitResponse<Git.PullResponse>[] responses
 
     if (sync) {
       responses = gits.mapAsync((git) => {
