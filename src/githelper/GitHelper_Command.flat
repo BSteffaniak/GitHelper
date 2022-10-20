@@ -7,13 +7,13 @@ import flat/fucli/CliArg
 import flat/github/GitHub
 
 class {
-  let static Logger log = Logger(GitHelper.class)
+  static Logger log = Logger(GitHelper.class)
 
-  let static CliArg pullCommand = CliArg("pull", count: 1)
-  let static CliArg cloneCommand = CliArg("clone", count: 1)
-  let static CliArg execCommand = CliArg("exec", minCount: 2)
-  let static CliArg directoryArg = CliArg("--directory", ["-d"], count: 1)
-  let static CliArg syncArg = CliArg("--sync")
+  static CliArg pullCommand = CliArg("pull", count: 1)
+  static CliArg cloneCommand = CliArg("clone", count: 1)
+  static CliArg execCommand = CliArg("exec", minCount: 2)
+  static CliArg directoryArg = CliArg("--directory", ["-d"], count: 1)
+  static CliArg syncArg = CliArg("--sync")
 
   public static async main(String[] args) {
     let cli = FuCli([

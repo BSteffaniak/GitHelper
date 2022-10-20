@@ -7,7 +7,7 @@ import flat/git/Git
 import flat/git/Git.PullResponse
 
 class {
-  let static Logger log = Logger(GitHelper.class)
+  static Logger log = Logger(GitHelper.class)
 
   public static async pullAll(
     File[] repoDirectories,
