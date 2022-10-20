@@ -10,7 +10,7 @@ import githelper/GitHelper
   GitHelper_Test
 ]]
 class {
-  public static async main(String args[]) {
+  public static async main(String[] args) {
     let test = GitHelper_TestSuite()
 
     Timer timer = Timer().start()
