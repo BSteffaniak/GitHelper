@@ -18,29 +18,29 @@ class {
     var GitResponse<Git.PullResponse>[] responses
 
     if (sync) {
-      responses = gits.mapAsync((git) => {
-        log.info("Pulling repo #{git.workingDirectory.nativeLocation}")
-        return GitResponse(git.workingDirectory, git.pull(silent: true))
+      responses = gits.mapAsync({
+        log.info("Pulling repo #{_x.workingDirectory.nativeLocation}")
+        return GitResponse(_x.workingDirectory, _x.pull(silent: true))
       })
     } else {
-      responses = gits.mapParallel((git) => {
-        log.info("Pulling repo #{git.workingDirectory.nativeLocation}")
-        return GitResponse(git.workingDirectory, git.pull(silent: true))
+      responses = gits.mapParallel({
+        log.info("Pulling repo #{_x.workingDirectory.nativeLocation}")
+        return GitResponse(_x.workingDirectory, _x.pull(silent: true))
       })
     }
 
     responses
       .filter({ _.response.success })
-      .forEach((value) => {
-        log.info("Repo \"#{value.repoDirectory.nativeLocation}\" #{value.response.upToDate ? "already up to date" : "updated"}.")
+      .forEach({
+        log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" #{_x.response.upToDate ? "already up to date" : "updated"}.")
       })
 
     responses
       .filter({ !_.response.success })
-      .forEach((value) => {
+      .forEach({
         log.error("|
-          Error pulling repo \"#{value.repoDirectory.nativeLocation}\":
-          \t#{value.response.toString().indent(1)}
+          Error pulling repo \"#{_x.repoDirectory.nativeLocation}\":
+          \t#{_x.response.toString().indent(1)}
           |")
       })
 
@@ -55,31 +55,31 @@ class {
     var GitResponse<ExecutionResponse>[] responses
 
     if (sync) {
-      responses = repoDirectories.mapAsync((directory) => {
-        let repoUrl = "https://github.com/#{organization}/#{directory.name}"
-        log.info("Cloning repo #{repoUrl} into #{directory.getCanonicalPath()}")
-        return GitResponse(directory, Git.clone(repoUrl, outputDirectory: directory.getCanonicalPath(), silent: true))
+      responses = repoDirectories.mapAsync({
+        let repoUrl = "https://github.com/#{organization}/#{_x.name}"
+        log.info("Cloning repo #{repoUrl} into #{_x.getCanonicalPath()}")
+        return GitResponse(_x, Git.clone(repoUrl, outputDirectory: _x.getCanonicalPath(), silent: true))
       })
     } else {
-      responses = repoDirectories.mapParallel((directory) => {
-        let repoUrl = "https://github.com/#{organization}/#{directory.name}"
-        log.info("Cloning repo #{repoUrl} into #{directory.getCanonicalPath()}")
-        return GitResponse(directory, Git.clone(repoUrl, outputDirectory: directory.getCanonicalPath(), silent: true))
+      responses = repoDirectories.mapParallel({
+        let repoUrl = "https://github.com/#{organization}/#{_x.name}"
+        log.info("Cloning repo #{repoUrl} into #{_x.getCanonicalPath()}")
+        return GitResponse(_x, Git.clone(repoUrl, outputDirectory: _x.getCanonicalPath(), silent: true))
       })
     }
 
     responses
       .filter({ _.response.exitCode == 0 })
-      .forEach((value) => {
-        log.info("Repo \"#{value.repoDirectory.nativeLocation}\" cloned.")
+      .forEach({
+        log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" cloned.")
       })
 
     responses
       .filter({ _.response.exitCode != 0 })
-      .forEach((value) => {
+      .forEach({
         log.error("|
-          Error cloning repo \"#{value.repoDirectory.nativeLocation}\":
-          \t#{value.response.toString().indent(1)}
+          Error cloning repo \"#{_x.repoDirectory.nativeLocation}\":
+          \t#{_x.response.toString().indent(1)}
           |")
       })
 
@@ -94,29 +94,29 @@ class {
     var GitResponse<ExecutionResponse>[] responses
 
     if (sync) {
-      responses = repoDirectories.mapAsync((directory) => {
-        log.info("Executing command \"#{commands}\" in directory #{directory.getCanonicalPath()}")
-        return GitResponse(directory, System.execute(commands, workingDirectory: directory.getCanonicalPath(), silent: true))
+      responses = repoDirectories.mapAsync({
+        log.info("Executing command \"#{commands}\" in directory #{_x.getCanonicalPath()}")
+        return GitResponse(_x, System.execute(commands, workingDirectory: _x.getCanonicalPath(), silent: true))
       })
     } else {
-      responses = repoDirectories.mapParallel((directory) => {
-        log.info("Executing command \"#{commands}\" in directory #{directory.getCanonicalPath()}")
-        return GitResponse(directory, System.execute(commands, workingDirectory: directory.getCanonicalPath(), silent: true))
+      responses = repoDirectories.mapParallel({
+        log.info("Executing command \"#{commands}\" in directory #{_x.getCanonicalPath()}")
+        return GitResponse(_x, System.execute(commands, workingDirectory: _x.getCanonicalPath(), silent: true))
       })
     }
 
     responses
       .filter({ _.response.exitCode == 0 })
-      .forEach((value) => {
-        log.info("Executed command in repo \"#{value.repoDirectory.nativeLocation}\" executed.")
+      .forEach({
+        log.info("Executed command in repo \"#{_x.repoDirectory.nativeLocation}\" executed.")
       })
 
     responses
       .filter({ _.response.exitCode != 0 })
-      .forEach((value) => {
+      .forEach({
         log.error("|
-          Error executing command in repo \"#{value.repoDirectory.nativeLocation}\":
-          \t#{value.response.toString().indent(1)}
+          Error executing command in repo \"#{_x.repoDirectory.nativeLocation}\":
+          \t#{_x.response.toString().indent(1)}
           |")
       })
 
