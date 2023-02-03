@@ -16,13 +16,16 @@ class {
   static CliArg syncArg = CliArg("--sync")
 
   public static async main(String[] args) {
-    let cli = FuCli([
-      pullCommand,
-      cloneCommand,
-      execCommand,
-      directoryArg,
-      syncArg
-    ]):parse(args.skip(1))
+    let cli = FuCli(
+      "git-helper",
+      [
+        pullCommand,
+        cloneCommand,
+        execCommand,
+        directoryArg,
+        syncArg
+      ]
+    ):parse(args.skip(1))
 
     let directory = directoryArg.enabled ?
       File(directoryArg.value) :
