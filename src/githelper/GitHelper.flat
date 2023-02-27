@@ -5,6 +5,7 @@ import flat/log/Logger
 import flat/io/File
 import flat/git/Git
 import flat/git/Git.PullResponse
+import flat/github
 
 class {
   static Logger log = Logger(GitHelper.class)
@@ -82,6 +83,37 @@ class {
           \t#{_x.response.toString().indent(1)}
           |")
       })
+
+    log.info("Finished")
+  }
+
+  public static async rerunFailedActions(
+    String organization,
+    File[] repoDirectories,
+    Bool: sync = false,
+    String: token = null
+  ) {
+    if (sync) {
+      repoDirectories
+        .flatMapAsync({ GitHub.listWorkflowRuns(organization, _x.name, 1, 1, token: token)})
+        .filter({ _.conclusion == "failure" })
+        .filter({ !_.name.startsWith("Create ") })
+        .filter({ !_.name.startsWith("Prepare ") })
+        .forEachAsync({
+          log.info("Rerunning failed #{organization}/#{_x.repository.name} jobs for \"#{_x.name}\": #{_x.htmlUrl}")
+          GitHub.rerunFailedRepositoryWorkflowRunJobs(organization, _x.repository.name, _x.id, token)
+        })
+    } else {
+      repoDirectories
+        .flatMapParallel({ GitHub.listWorkflowRuns(organization, _x.name, 1, 1, token: token)})
+        .filter({ _.conclusion == "failure" })
+        .filter({ !_.name.startsWith("Create ") })
+        .filter({ !_.name.startsWith("Prepare ") })
+        .forEachParallel({
+          log.info("Rerunning failed #{organization}/#{_x.repository.name} jobs for \"#{_x.name}\": #{_x.htmlUrl}")
+          GitHub.rerunFailedRepositoryWorkflowRunJobs(organization, _x.repository.name, _x.id, token)
+        })
+    }
 
     log.info("Finished")
   }

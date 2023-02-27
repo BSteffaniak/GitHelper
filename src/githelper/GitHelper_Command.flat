@@ -9,6 +9,13 @@ import flat/github/GitHub
 class {
   static Logger log = Logger(GitHelper.class)
 
+  static CliArg organizationArg = CliArg(
+    name: "organization",
+    description: "The Organization to run the command against",
+    count: 1,
+    wildcard: true
+  )
+  static CliArg rerunFailedActionsCommand = CliArg("rerun-failed-actions", args: [organizationArg])
   static CliArg pullCommand = CliArg("pull", count: 1)
   static CliArg cloneCommand = CliArg("clone", count: 1)
   static CliArg execCommand = CliArg("exec", minCount: 2)
@@ -29,6 +36,7 @@ class {
     let cli = FuCli(
       "git-helper",
       [
+        rerunFailedActionsCommand,
         pullCommand,
         cloneCommand,
         execCommand,
@@ -48,11 +56,21 @@ class {
       log.debug("Running command \"#command\"")
 
       match (command) {
+        rerunFailedActionsCommand => rerunFailedActions(directory)
         pullCommand => pull(directory)
         cloneCommand => clone(directory)
         execCommand => exec(directory)
       }
     }
+  }
+
+  static async rerunFailedActions(File directory) {
+    GitHelper.rerunFailedActions(
+      organizationArg.value,
+      getRepoDirectories(organizationArg.value, directory),
+      sync: syncArg.enabled,
+      token: tokenArg.value
+    )
   }
 
   static async pull(File directory) {
