@@ -13,6 +13,16 @@ class {
   static CliArg cloneCommand = CliArg("clone", count: 1)
   static CliArg execCommand = CliArg("exec", minCount: 2)
   static CliArg directoryArg = CliArg("--directory", ["-d"], count: 1)
+
+  static CliArg tokenArg = CliArg(
+    name: "token",
+    description: "GitHub PAT token to use with the request",
+    count: 1,
+    wildcard: true
+  )
+
+  static CliArg tokenParam = CliArg("--token", ["-t"], args: [tokenArg])
+
   static CliArg syncArg = CliArg("--sync")
 
   public static async main(String[] args) {
@@ -23,6 +33,7 @@ class {
         cloneCommand,
         execCommand,
         directoryArg,
+        tokenParam,
         syncArg
       ]
     ):parse(args.skip(1))
@@ -68,7 +79,7 @@ class {
   }
 
   static async getRepoDirectories(String organization, File directory) =>
-    GitHub.getOrganizationRepos(organization)
+    GitHub.getOrganizationRepos(organization, token: tokenArg.value)
       .map({ _.name })
       .map({ File(directory, _) })
 }
