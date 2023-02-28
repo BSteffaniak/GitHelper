@@ -87,6 +87,14 @@ class {
     log.info("Finished")
   }
 
+  static getRepoNameFromUrl(String url) -> String {
+    let start = "https://api.github.com/repos/".count
+    let repoNameStart = url.indexOf('/', start + 1) + 1
+    let repoNameEnd = url.indexOf('/', repoNameStart + 1)
+
+    return url.substring(repoNameStart, repoNameEnd)
+  }
+
   public static async rerunFailedActions(
     String organization,
     File[] repoDirectories,
@@ -95,7 +103,9 @@ class {
   ) {
     if (sync) {
       repoDirectories
-        .flatMapAsync({ GitHub.listWorkflowRuns(organization, _x.name, 1, 1, token: token)})
+        .flatMapAsync({ GitHub.getRepositoryWorkflows(organization, _x.name, token) })
+        .filter({ _.state == "active" })
+        .mapNotNullAsync({ GitHub.listWorkflowRunsForWorkflow(organization, getRepoNameFromUrl(_x.url), _x.id, 1, 1, token: token).first })
         .filter({ _.conclusion == "failure" })
         .filter({ !_.name.startsWith("Create ") })
         .filter({ !_.name.startsWith("Prepare ") })
@@ -105,7 +115,9 @@ class {
         })
     } else {
       repoDirectories
-        .flatMapParallel({ GitHub.listWorkflowRuns(organization, _x.name, 1, 1, token: token)})
+        .flatMapParallel({ GitHub.getRepositoryWorkflows(organization, _x.name, token) })
+        .filter({ _.state == "active" })
+        .mapNotNullParallel({ GitHub.listWorkflowRunsForWorkflow(organization, getRepoNameFromUrl(_x.url), _x.id, 1, 1, token: token).first })
         .filter({ _.conclusion == "failure" })
         .filter({ !_.name.startsWith("Create ") })
         .filter({ !_.name.startsWith("Prepare ") })
