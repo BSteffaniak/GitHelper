@@ -98,6 +98,7 @@ class {
 
   static async getRepoDirectories(String organization, File directory) =>
     GitHub.getOrganizationRepos(organization, token: tokenArg.value)
+      .filter({ _.visibility == "public" })
       .map({ _.name })
       .map({ File(directory, _) })
 }
