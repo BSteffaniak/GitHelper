@@ -15,10 +15,22 @@ class {
     count: 1,
     wildcard: true
   )
+
   static CliArg rerunFailedActionsCommand = CliArg("rerun-failed-actions", args: [organizationArg])
-  static CliArg pullCommand = CliArg("pull", count: 1)
-  static CliArg cloneCommand = CliArg("clone", count: 1)
-  static CliArg execCommand = CliArg("exec", minCount: 2)
+
+  static CliArg pullCommand = CliArg("pull", args: [organizationArg])
+
+  static CliArg cloneCommand = CliArg("clone", args: [organizationArg])
+
+  static CliArg execCommandArgs = CliArg(
+    name: "execCommands",
+    description: "The command to run",
+    minCount: 1,
+    wildcard: true
+  )
+
+  static CliArg execCommand = CliArg("exec", args: [organizationArg, execCommandArgs])
+
   static CliArg directoryArg = CliArg("--directory", ["-d"], count: 1)
 
   static CliArg tokenArg = CliArg(
@@ -75,23 +87,23 @@ class {
 
   static async pull(File directory) {
     GitHelper.pullAll(
-      getRepoDirectories(pullCommand.value, directory).filter({ _.exists }),
+      getRepoDirectories(organizationArg.value, directory).filter({ _.exists }),
       sync: syncArg.enabled
     )
   }
 
   static async clone(File directory) {
     GitHelper.cloneAll(
-      cloneCommand.value,
-      getRepoDirectories(cloneCommand.value, directory),
+      organizationArg.value,
+      getRepoDirectories(organizationArg.value, directory),
       sync: syncArg.enabled
     )
   }
 
   static async exec(File directory) {
     GitHelper.execAll(
-      execCommand.values.skip(1),
-      getRepoDirectories(execCommand.values.first, directory).filter({ _.exists }),
+      execCommandArgs.values,
+      getRepoDirectories(organizationArg.value, directory).filter({ _.exists }),
       sync: syncArg.enabled
     )
   }
