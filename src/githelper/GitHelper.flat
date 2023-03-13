@@ -87,6 +87,29 @@ class {
     log.info("Finished")
   }
 
+  public static async status(
+    String organization,
+    File[] repoDirectories,
+    Bool: sync = false
+  ) {
+    var GitResponse<StatusResponse>[] responses
+
+    if (sync) {
+      responses = repoDirectories.mapAsync({ GitResponse(_x, Git.status(workingDirectory: _x.getCanonicalPath(), silent: true)) })
+    } else {
+      responses = repoDirectories.mapParallel({ GitResponse(_x, Git.status(workingDirectory: _x.getCanonicalPath(), silent: true)) })
+    }
+
+    let uncommitted = responses.filter({ !_.response.nothingToCommit })
+
+    if (uncommitted.isEmpty) {
+      log.info("Nothing to commit")
+      return
+    }
+
+    uncommitted.forEach({ log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" has uncommitted work.") })
+  }
+
   static getRepoNameFromUrl(String url) -> String {
     let start = "https://api.github.com/repos/".count
     let repoNameStart = url.indexOf('/', start + 1) + 1

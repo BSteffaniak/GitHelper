@@ -22,6 +22,8 @@ class {
 
   static CliArg cloneCommand = CliArg("clone", args: [organizationArg])
 
+  static CliArg statusCommand = CliArg("status", args: [organizationArg])
+
   static CliArg execCommandArgs = CliArg(
     name: "execCommands",
     description: "The command to run",
@@ -51,6 +53,7 @@ class {
         rerunFailedActionsCommand,
         pullCommand,
         cloneCommand,
+        statusCommand,
         execCommand,
         directoryArg,
         tokenParam,
@@ -71,6 +74,7 @@ class {
         rerunFailedActionsCommand => rerunFailedActions(directory)
         pullCommand => pull(directory)
         cloneCommand => clone(directory)
+        statusCommand => status(directory)
         execCommand => exec(directory)
       }
     }
@@ -94,6 +98,14 @@ class {
 
   static async clone(File directory) {
     GitHelper.cloneAll(
+      organizationArg.value,
+      getRepoDirectories(organizationArg.value, directory),
+      sync: syncArg.enabled
+    )
+  }
+
+  static async status(File directory) {
+    GitHelper.status(
       organizationArg.value,
       getRepoDirectories(organizationArg.value, directory),
       sync: syncArg.enabled
