@@ -8,192 +8,192 @@ import flat/git/Git.PullResponse
 import flat/github
 
 class {
-  static Logger log = Logger(GitHelper.class)
+    static Logger log = Logger(GitHelper.class)
 
-  public static async pullAll(
-    File[] repoDirectories,
-    Bool: sync = false
-  ) {
-    let gits = repoDirectories.map({ Git(_) })
+    public static async pullAll(
+        File[] repoDirectories,
+        Bool: sync = false
+    ) {
+        let gits = repoDirectories.map({ Git(_) })
 
-    var GitResponse<Git.PullResponse>[] responses
+        var GitResponse<Git.PullResponse>[] responses
 
-    if (sync) {
-      responses = gits.mapAsync({
-        log.info("Pulling repo #{_x.workingDirectory.nativeLocation}")
-        return GitResponse(_x.workingDirectory, _x.pull(silent: true))
-      })
-    } else {
-      responses = gits.mapParallel({
-        log.info("Pulling repo #{_x.workingDirectory.nativeLocation}")
-        return GitResponse(_x.workingDirectory, _x.pull(silent: true))
-      })
+        if (sync) {
+            responses = gits.mapAsync({
+                log.info("Pulling repo #{_x.workingDirectory.nativeLocation}")
+                return GitResponse(_x.workingDirectory, _x.pull(silent: true))
+            })
+        } else {
+            responses = gits.mapParallel({
+                log.info("Pulling repo #{_x.workingDirectory.nativeLocation}")
+                return GitResponse(_x.workingDirectory, _x.pull(silent: true))
+            })
+        }
+
+        responses
+            .filter({ _.response.success })
+            .forEach({
+                log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" #{_x.response.upToDate ? "already up to date" : "updated"}.")
+            })
+
+        responses
+            .filter({ !_.response.success })
+            .forEach({
+                log.error("|
+                    Error pulling repo \"#{_x.repoDirectory.nativeLocation}\":
+                    \t#{_x.response.toString().indent(1)}
+                    |")
+            })
+
+        log.info("Finished")
     }
 
-    responses
-      .filter({ _.response.success })
-      .forEach({
-        log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" #{_x.response.upToDate ? "already up to date" : "updated"}.")
-      })
+    public static async cloneAll(
+        String organization,
+        File[] repoDirectories,
+        Bool: sync = false
+    ) {
+        var GitResponse<ExecutionResponse>[] responses
 
-    responses
-      .filter({ !_.response.success })
-      .forEach({
-        log.error("|
-          Error pulling repo \"#{_x.repoDirectory.nativeLocation}\":
-          \t#{_x.response.toString().indent(1)}
-          |")
-      })
+        if (sync) {
+            responses = repoDirectories.mapAsync({
+                let repoUrl = "https://github.com/#{organization}/#{_x.name}"
+                log.info("Cloning repo #{repoUrl} into #{_x.getCanonicalPath()}")
+                return GitResponse(_x, Git.clone(repoUrl, outputDirectory: _x.getCanonicalPath(), silent: true))
+            })
+        } else {
+            responses = repoDirectories.mapParallel({
+                let repoUrl = "https://github.com/#{organization}/#{_x.name}"
+                log.info("Cloning repo #{repoUrl} into #{_x.getCanonicalPath()}")
+                return GitResponse(_x, Git.clone(repoUrl, outputDirectory: _x.getCanonicalPath(), silent: true))
+            })
+        }
 
-    log.info("Finished")
-  }
+        responses
+            .filter({ _.response.exitCode == 0 })
+            .forEach({
+                log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" cloned.")
+            })
 
-  public static async cloneAll(
-    String organization,
-    File[] repoDirectories,
-    Bool: sync = false
-  ) {
-    var GitResponse<ExecutionResponse>[] responses
+        responses
+            .filter({ _.response.exitCode != 0 })
+            .forEach({
+                log.error("|
+                    Error cloning repo \"#{_x.repoDirectory.nativeLocation}\":
+                    \t#{_x.response.toString().indent(1)}
+                    |")
+            })
 
-    if (sync) {
-      responses = repoDirectories.mapAsync({
-        let repoUrl = "https://github.com/#{organization}/#{_x.name}"
-        log.info("Cloning repo #{repoUrl} into #{_x.getCanonicalPath()}")
-        return GitResponse(_x, Git.clone(repoUrl, outputDirectory: _x.getCanonicalPath(), silent: true))
-      })
-    } else {
-      responses = repoDirectories.mapParallel({
-        let repoUrl = "https://github.com/#{organization}/#{_x.name}"
-        log.info("Cloning repo #{repoUrl} into #{_x.getCanonicalPath()}")
-        return GitResponse(_x, Git.clone(repoUrl, outputDirectory: _x.getCanonicalPath(), silent: true))
-      })
+        log.info("Finished")
     }
 
-    responses
-      .filter({ _.response.exitCode == 0 })
-      .forEach({
-        log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" cloned.")
-      })
+    public static async status(
+        String organization,
+        File[] repoDirectories,
+        Bool: sync = false
+    ) {
+        var GitResponse<StatusResponse>[] responses
 
-    responses
-      .filter({ _.response.exitCode != 0 })
-      .forEach({
-        log.error("|
-          Error cloning repo \"#{_x.repoDirectory.nativeLocation}\":
-          \t#{_x.response.toString().indent(1)}
-          |")
-      })
+        if (sync) {
+            responses = repoDirectories.mapAsync({ GitResponse(_x, Git.status(workingDirectory: _x.getCanonicalPath(), silent: true)) })
+        } else {
+            responses = repoDirectories.mapParallel({ GitResponse(_x, Git.status(workingDirectory: _x.getCanonicalPath(), silent: true)) })
+        }
 
-    log.info("Finished")
-  }
+        let uncommitted = responses.filter({ !_.response.nothingToCommit })
 
-  public static async status(
-    String organization,
-    File[] repoDirectories,
-    Bool: sync = false
-  ) {
-    var GitResponse<StatusResponse>[] responses
+        if (uncommitted.isEmpty) {
+            log.info("Nothing to commit")
+            return
+        }
 
-    if (sync) {
-      responses = repoDirectories.mapAsync({ GitResponse(_x, Git.status(workingDirectory: _x.getCanonicalPath(), silent: true)) })
-    } else {
-      responses = repoDirectories.mapParallel({ GitResponse(_x, Git.status(workingDirectory: _x.getCanonicalPath(), silent: true)) })
+        uncommitted.forEach({ log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" has uncommitted work.") })
     }
 
-    let uncommitted = responses.filter({ !_.response.nothingToCommit })
+    static getRepoNameFromUrl(String url) -> String {
+        let start = "https://api.github.com/repos/".count
+        let repoNameStart = url.indexOf('/', start + 1) + 1
+        let repoNameEnd = url.indexOf('/', repoNameStart + 1)
 
-    if (uncommitted.isEmpty) {
-      log.info("Nothing to commit")
-      return
+        return url.substring(repoNameStart, repoNameEnd)
     }
 
-    uncommitted.forEach({ log.info("Repo \"#{_x.repoDirectory.nativeLocation}\" has uncommitted work.") })
-  }
+    public static async rerunFailedActions(
+        String organization,
+        File[] repoDirectories,
+        Bool: sync = false,
+        String: token = null
+    ) {
+        if (sync) {
+            repoDirectories
+                .flatMapAsync({ GitHub.getRepositoryWorkflows(organization, _x.name, token) })
+                .filter({ _.state == "active" })
+                .mapNotNullAsync({ GitHub.listWorkflowRunsForWorkflow(organization, getRepoNameFromUrl(_x.url), _x.id, 1, 1, token: token).first })
+                .filter({ _.conclusion == "failure" })
+                .filter({ !_.name.startsWith("Create ") })
+                .filter({ !_.name.startsWith("Prepare ") })
+                .forEachAsync({
+                    log.info("Rerunning failed #{organization}/#{_x.repository.name} jobs for \"#{_x.name}\": #{_x.htmlUrl}")
+                    GitHub.rerunFailedRepositoryWorkflowRunJobs(organization, _x.repository.name, _x.id, token)
+                })
+        } else {
+            repoDirectories
+                .flatMapParallel({ GitHub.getRepositoryWorkflows(organization, _x.name, token) })
+                .filter({ _.state == "active" })
+                .mapNotNullParallel({ GitHub.listWorkflowRunsForWorkflow(organization, getRepoNameFromUrl(_x.url), _x.id, 1, 1, token: token).first })
+                .filter({ _.conclusion == "failure" })
+                .filter({ !_.name.startsWith("Create ") })
+                .filter({ !_.name.startsWith("Prepare ") })
+                .forEachParallel({
+                    log.info("Rerunning failed #{organization}/#{_x.repository.name} jobs for \"#{_x.name}\": #{_x.htmlUrl}")
+                    GitHub.rerunFailedRepositoryWorkflowRunJobs(organization, _x.repository.name, _x.id, token)
+                })
+        }
 
-  static getRepoNameFromUrl(String url) -> String {
-    let start = "https://api.github.com/repos/".count
-    let repoNameStart = url.indexOf('/', start + 1) + 1
-    let repoNameEnd = url.indexOf('/', repoNameStart + 1)
-
-    return url.substring(repoNameStart, repoNameEnd)
-  }
-
-  public static async rerunFailedActions(
-    String organization,
-    File[] repoDirectories,
-    Bool: sync = false,
-    String: token = null
-  ) {
-    if (sync) {
-      repoDirectories
-        .flatMapAsync({ GitHub.getRepositoryWorkflows(organization, _x.name, token) })
-        .filter({ _.state == "active" })
-        .mapNotNullAsync({ GitHub.listWorkflowRunsForWorkflow(organization, getRepoNameFromUrl(_x.url), _x.id, 1, 1, token: token).first })
-        .filter({ _.conclusion == "failure" })
-        .filter({ !_.name.startsWith("Create ") })
-        .filter({ !_.name.startsWith("Prepare ") })
-        .forEachAsync({
-          log.info("Rerunning failed #{organization}/#{_x.repository.name} jobs for \"#{_x.name}\": #{_x.htmlUrl}")
-          GitHub.rerunFailedRepositoryWorkflowRunJobs(organization, _x.repository.name, _x.id, token)
-        })
-    } else {
-      repoDirectories
-        .flatMapParallel({ GitHub.getRepositoryWorkflows(organization, _x.name, token) })
-        .filter({ _.state == "active" })
-        .mapNotNullParallel({ GitHub.listWorkflowRunsForWorkflow(organization, getRepoNameFromUrl(_x.url), _x.id, 1, 1, token: token).first })
-        .filter({ _.conclusion == "failure" })
-        .filter({ !_.name.startsWith("Create ") })
-        .filter({ !_.name.startsWith("Prepare ") })
-        .forEachParallel({
-          log.info("Rerunning failed #{organization}/#{_x.repository.name} jobs for \"#{_x.name}\": #{_x.htmlUrl}")
-          GitHub.rerunFailedRepositoryWorkflowRunJobs(organization, _x.repository.name, _x.id, token)
-        })
+        log.info("Finished")
     }
 
-    log.info("Finished")
-  }
+    public static async execAll(
+        String[] commands,
+        File[] repoDirectories,
+        Bool: sync = false
+    ) {
+        var GitResponse<ExecutionResponse>[] responses
 
-  public static async execAll(
-    String[] commands,
-    File[] repoDirectories,
-    Bool: sync = false
-  ) {
-    var GitResponse<ExecutionResponse>[] responses
+        if (sync) {
+            responses = repoDirectories.mapAsync({
+                log.info("Executing command \"#{commands}\" in directory #{_x.getCanonicalPath()}")
+                return GitResponse(_x, System.execute(commands, workingDirectory: _x.getCanonicalPath(), silent: true))
+            })
+        } else {
+            responses = repoDirectories.mapParallel({
+                log.info("Executing command \"#{commands}\" in directory #{_x.getCanonicalPath()}")
+                return GitResponse(_x, System.execute(commands, workingDirectory: _x.getCanonicalPath(), silent: true))
+            })
+        }
 
-    if (sync) {
-      responses = repoDirectories.mapAsync({
-        log.info("Executing command \"#{commands}\" in directory #{_x.getCanonicalPath()}")
-        return GitResponse(_x, System.execute(commands, workingDirectory: _x.getCanonicalPath(), silent: true))
-      })
-    } else {
-      responses = repoDirectories.mapParallel({
-        log.info("Executing command \"#{commands}\" in directory #{_x.getCanonicalPath()}")
-        return GitResponse(_x, System.execute(commands, workingDirectory: _x.getCanonicalPath(), silent: true))
-      })
+        responses
+            .filter({ _.response.exitCode == 0 })
+            .forEach({
+                log.info("Executed command in repo \"#{_x.repoDirectory.nativeLocation}\" executed.")
+            })
+
+        responses
+            .filter({ _.response.exitCode != 0 })
+            .forEach({
+                log.error("|
+                    Error executing command in repo \"#{_x.repoDirectory.nativeLocation}\":
+                    \t#{_x.response.toString().indent(1)}
+                    |")
+            })
+
+        log.info("Finished")
     }
 
-    responses
-      .filter({ _.response.exitCode == 0 })
-      .forEach({
-        log.info("Executed command in repo \"#{_x.repoDirectory.nativeLocation}\" executed.")
-      })
-
-    responses
-      .filter({ _.response.exitCode != 0 })
-      .forEach({
-        log.error("|
-          Error executing command in repo \"#{_x.repoDirectory.nativeLocation}\":
-          \t#{_x.response.toString().indent(1)}
-          |")
-      })
-
-    log.info("Finished")
-  }
-
-  class GitResponse<TResponse> {
-    public construct(
-      visible File repoDirectory,
-      visible TResponse response
-    ) {}
-  }
+    class GitResponse<TResponse> {
+        public construct(
+            visible File repoDirectory,
+            visible TResponse response
+        ) {}
+    }
 }
