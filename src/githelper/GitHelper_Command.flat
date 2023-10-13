@@ -46,6 +46,8 @@ class {
 
     static CliArg syncArg = CliArg("--sync")
 
+    static CliArg sshArg = CliArg("--ssh")
+
     public static async main(String[] args) {
         let cli = FuCli(
             "git-helper",
@@ -57,7 +59,8 @@ class {
                 execCommand,
                 directoryArg,
                 tokenParam,
-                syncArg
+                syncArg,
+                sshArg
             ]
         ):parse(args.skip(1))
 
@@ -100,6 +103,7 @@ class {
         GitHelper.cloneAll(
             organizationArg.value,
             getRepoDirectories(organizationArg.value, directory),
+            ssh: sshArg.enabled,
             sync: syncArg.enabled
         )
     }

@@ -48,22 +48,31 @@ class {
         log.info("Finished")
     }
 
+    mapGitUrl(Bool ssh, String organization, String repoName) -> String {
+        if (ssh) {
+            return "git@github.com:#{organization}/#{repoName}.git"
+        } else {
+            return "https://github.com/#{organization}/#{repoName}"
+        }
+    }
+
     public static async cloneAll(
         String organization,
         File[] repoDirectories,
+        Bool: ssh = false,
         Bool: sync = false
     ) {
         var GitResponse<ExecutionResponse>[] responses
 
         if (sync) {
             responses = repoDirectories.mapAsync({
-                let repoUrl = "https://github.com/#{organization}/#{_x.name}"
+                let repoUrl = mapGitUrl(ssh, organization, _x.name)
                 log.info("Cloning repo #{repoUrl} into #{_x.getCanonicalPath()}")
                 return GitResponse(_x, Git.clone(repoUrl, outputDirectory: _x.getCanonicalPath(), silent: true))
             })
         } else {
             responses = repoDirectories.mapParallel({
-                let repoUrl = "https://github.com/#{organization}/#{_x.name}"
+                let repoUrl = mapGitUrl(ssh, organization, _x.name)
                 log.info("Cloning repo #{repoUrl} into #{_x.getCanonicalPath()}")
                 return GitResponse(_x, Git.clone(repoUrl, outputDirectory: _x.getCanonicalPath(), silent: true))
             })
