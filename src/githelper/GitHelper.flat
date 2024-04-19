@@ -127,6 +127,33 @@ class {
         return url.substring(repoNameStart, repoNameEnd)
     }
 
+    public static async reenableInactiveWorkflows(
+        String organization,
+        File[] repoDirectories,
+        Bool: sync = false,
+        String: token = null
+    ) {
+        if (sync) {
+            repoDirectories
+                .flatMapAsync({ GitHub.getRepositoryWorkflows(organization, _x.name, token) })
+                .filter({ _.state == "disabled_inactivity" })
+                .forEachAsync({
+                    log.info("Enabling #{organization}/#{_x.repositoryName} workflow \"#{_x.name}\": #{_x.htmlUrl}")
+                    GitHub.enableWorkflow(organization, _x.repositoryName, _x.id, token)
+                })
+        } else {
+            repoDirectories
+                .flatMapParallel({ GitHub.getRepositoryWorkflows(organization, _x.name, token) })
+                .filter({ _.state == "disabled_inactivity" })
+                .forEachParallel({
+                    log.info("Enabling #{organization}/#{_x.repositoryName} workflow \"#{_x.name}\": #{_x.htmlUrl}")
+                    GitHub.enableWorkflow(organization, _x.repositoryName, _x.id, token)
+                })
+        }
+
+        log.info("Finished")
+    }
+
     public static async rerunFailedActions(
         String organization,
         File[] repoDirectories,

@@ -16,6 +16,8 @@ class {
         wildcard: true
     )
 
+    static CliArg reenableInactiveWorkflowsCommand = CliArg("reenable-inactive-workflows", args: [organizationArg])
+
     static CliArg rerunFailedActionsCommand = CliArg("rerun-failed-actions", args: [organizationArg])
 
     static CliArg pullCommand = CliArg("pull", args: [organizationArg])
@@ -52,6 +54,7 @@ class {
         let cli = FuCli(
             "git-helper",
             [
+                reenableInactiveWorkflowsCommand,
                 rerunFailedActionsCommand,
                 pullCommand,
                 cloneCommand,
@@ -71,9 +74,10 @@ class {
         let commands = cli.args.filter({ _.enabled })
 
         for (command in commands) {
-            log.debug("Running command \"#command\"")
+            log.debug("Running command \"#{command}\"")
 
             match (command) {
+                reenableInactiveWorkflowsCommand => reenableInactiveWorkflows(directory)
                 rerunFailedActionsCommand => rerunFailedActions(directory)
                 pullCommand => pull(directory)
                 cloneCommand => clone(directory)
@@ -81,6 +85,15 @@ class {
                 execCommand => exec(directory)
             }
         }
+    }
+
+    static async reenableInactiveWorkflows(File directory) {
+        GitHelper.reenableInactiveWorkflows(
+            organizationArg.value,
+            getRepoDirectories(organizationArg.value, directory),
+            sync: syncArg.enabled,
+            token: tokenArg.value
+        )
     }
 
     static async rerunFailedActions(File directory) {
