@@ -189,6 +189,52 @@ class {
         log.info("Finished")
     }
 
+    public static async updateRemote(
+        String organization,
+        File[] repoDirectories,
+        Bool: sync = false,
+        Bool: ssh = false
+    ) {
+        var GitResponse<ExecutionResponse>[] responses
+
+        if (sync) {
+            responses = repoDirectories
+                .mapAsync({
+                    let repo = _x.name
+                    let url = mapGitUrl(ssh, organization, repo)
+                    log.info("Updating #{repo} remote to #{url}")
+                    let command = ["git", "remote", "set-url", "origin", url]
+                    return GitResponse(_x, System.execute(command, workingDirectory: _x.getCanonicalPath(), silent: true))
+                })
+        } else {
+            responses = repoDirectories
+                .mapParallel({
+                    let repo = _x.name
+                    let url = mapGitUrl(ssh, organization, repo)
+                    log.info("Updating #{repo} remote to #{url}")
+                    let command = ["git", "remote", "set-url", "origin", url]
+                    return GitResponse(_x, System.execute(command, workingDirectory: _x.getCanonicalPath(), silent: true))
+                })
+        }
+
+        responses
+            .filter({ _.response.exitCode == 0 })
+            .forEach({
+                log.info("Updated remote in repo \"#{_x.repoDirectory.nativeLocation}\" executed.")
+            })
+
+        responses
+            .filter({ _.response.exitCode != 0 })
+            .forEach({
+                log.error("|
+                    Error updating remote in repo \"#{_x.repoDirectory.nativeLocation}\":
+                    \t#{_x.response.toString().indent(1)}
+                    |")
+            })
+
+        log.info("Finished")
+    }
+
     public static async execAll(
         String[] commands,
         File[] repoDirectories,

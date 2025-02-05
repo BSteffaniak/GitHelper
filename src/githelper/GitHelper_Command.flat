@@ -20,6 +20,8 @@ class {
 
     static CliArg rerunFailedActionsCommand = CliArg("rerun-failed-actions", args: [organizationArg])
 
+    static CliArg updateRemoteCommand = CliArg("update-remote", args: [organizationArg])
+
     static CliArg pullCommand = CliArg("pull", args: [organizationArg])
 
     static CliArg cloneCommand = CliArg("clone", args: [organizationArg])
@@ -56,6 +58,7 @@ class {
             [
                 reenableInactiveWorkflowsCommand,
                 rerunFailedActionsCommand,
+                updateRemoteCommand,
                 pullCommand,
                 cloneCommand,
                 statusCommand,
@@ -79,6 +82,7 @@ class {
             match (command) {
                 reenableInactiveWorkflowsCommand => reenableInactiveWorkflows(directory)
                 rerunFailedActionsCommand => rerunFailedActions(directory)
+                updateRemoteCommand => updateRemote(directory)
                 pullCommand => pull(directory)
                 cloneCommand => clone(directory)
                 statusCommand => status(directory)
@@ -102,6 +106,15 @@ class {
             getRepoDirectories(organizationArg.value, directory),
             sync: syncArg.enabled,
             token: tokenArg.value
+        )
+    }
+
+    static async updateRemote(File directory) {
+        GitHelper.updateRemote(
+            organizationArg.value,
+            getRepoDirectories(organizationArg.value, directory),
+            sync: syncArg.enabled,
+            ssh: sshArg.enabled
         )
     }
 
