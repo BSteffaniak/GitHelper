@@ -48,7 +48,7 @@ class {
         log.info("Finished")
     }
 
-    mapGitUrl(Bool ssh, String organization, String repoName) -> String {
+    static mapGitUrl(Bool ssh, String organization, String repoName) -> String {
         if (ssh) {
             return "git@github.com:#{organization}/#{repoName}.git"
         } else {
